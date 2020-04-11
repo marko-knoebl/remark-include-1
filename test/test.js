@@ -5,13 +5,16 @@ var tap = require('tap')
 var fs = require('fs')
 
 var include = require('../index')
+
 var processor = remark().use(include)
+var processorGlob = remark().use(include, {glob: true})
 
 var map = {
   '@include a.md': '# A',
   '@include a': '# A',
   '@include b': '# B',
-  '@include sub/sub': '# A\n\n# sub'
+  '@include sub/sub': '# A\n\n# sub',
+  '@include c*.md': '# C1\n\n# C2'
 }
 
 function transform (lines) {
@@ -63,6 +66,16 @@ tap.test('should fail to include non-existent file', function (t) {
   t.throws(
     function () { processor.processSync('@include nope.md').toString() },
     'Unable to include ' + path.join(process.cwd(), 'nope.md')
+  )
+  t.end()
+})
+
+tap.test('should include by glob pattern', function(t) {
+  var file = loadFile('pattern.md')
+  var expected = transform(file.contents.split('\n'))
+  t.equal(
+    processorGlob.processSync(file).toString(),
+    expected
   )
   t.end()
 })

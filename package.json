@@ -29,6 +29,7 @@
     "tap": "^10.0.0"
   },
   "dependencies": {
+    "fast-glob": "^3.2.2",
     "vfile": "^2.0.0"
   }
 }

@@ -1,6 +1,7 @@
 var VFile = require('vfile')
 var path = require('path')
 var fs = require('fs')
+var fastGlob = require('fast-glob')
 
 var parseInclude = /^@include (.*)(\n|$)/
 
@@ -14,32 +15,28 @@ module.exports = function (options) {
   prt.blockMethods.unshift('include')
 
   return function transformer(ast, file) {
-    var children = ast.children
+    // look for any "include" elements
 
-    for (var i = 0; i < children.length; i++) {
-      var child = children[i]
+    var i = 0;
+    while (i < ast.children.length) {
+      var child = ast.children[i];
       if (child.type === 'include') {
-        // Load file and create VFile
-        // console.log(cwd, file)
-        // var file = toFile(path.join(file.dirname || cwd, child.value))
+        var includedChildren = [];
 
-        // Parse vfile contents
-        // var parser = new processor.Parser(file, null, processor)
-        var root = proc.runSync(proc.parse(
-          toFile(path.join(child.source.dirname || cwd, child.value))
-        ))
-
-        // Split and merge the head and tail around the new children
-        var head = children.slice(0, i)
-        var tail = children.slice(i + 1)
-        children = head.concat(root.children).concat(tail)
-
-        // Remember to update the offset!
-        i += root.children.length - 1
+        var includePattern = path.join(child.source.dirname || cwd, child.value)
+        var includePathsUnique = matchMdPaths(includePattern, glob=options.glob)
+        for (var includePath of includePathsUnique) {
+          var fileContents = fs.readFileSync(includePath, {encoding: "utf-8"})
+          var vfile = new VFile({path: includePath, contents: fileContents})
+          var includedChildrenFromCurrentFile = proc.runSync(proc.parse(vfile)).children;
+          includedChildren = includedChildren.concat(includedChildrenFromCurrentFile)
+        }
+        ast.children.splice(i, 1, ...includedChildren)
+        i += includedChildren.length
+      } else {
+        i ++
       }
     }
-
-    ast.children = children
   }
 }
 
@@ -70,20 +67,32 @@ function tokenizer (eat, value, silent) {
   return node
 }
 
-function toFile(full) {
-  return new VFile({path: full, contents: loadContent(full).toString('utf8')})
-}
-
-function loadContent(file) {
-  // console.log('loading', file)
-  try { return fs.readFileSync(file) }
-  catch (e) {}
-
-  try { return fs.readFileSync(file + '.md') }
-  catch (e) {}
-
-  try { return fs.readFileSync(file + '.markdown') }
-  catch (e) {}
-
-  throw new Error('Unable to include ' + file)
+/**
+ * returns an array of paths that match the given pattern
+ * if glob is true, find matches based on a glob pattern
+ * otherwise, look for "pattern", "pattern.md" or "pattern.markdown"
+ */
+function matchMdPaths(pattern, glob=false) {
+  var patterns = [pattern, pattern + ".md", pattern + ".markdown"]
+  if (glob) {
+    var includePaths = [];
+    for (let pat of patterns) {
+      includePaths = includePaths.concat(fastGlob.sync(pat))
+    }
+    // remove any duplicates that were matched
+    // both with and without extensions
+    var includePathsUnique = [...new Set(includePaths)]
+    includePathsUnique.sort()
+    if (includePaths.length === 0) {
+      throw new Error('Unable to include ' + pattern)
+    }
+    return includePathsUnique
+  } else {
+    for (let pat of patterns) {
+      if (fs.existsSync(pat)) {
+        return [pat]
+      }
+    }
+    throw new Error('Unable to include ' + pattern)
+  }
 }
