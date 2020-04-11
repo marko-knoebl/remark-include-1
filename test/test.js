@@ -31,27 +31,30 @@ function loadFile (filePath) {
 
 tap.test('should include by exact path', function (t) {
   var file = loadFile('exact.md')
+  var expected = transform(file.contents.split('\n'))
   t.equal(
     processor.processSync(file).toString(),
-    transform(file.contents.split('\n'))
+    expected
   )
   t.end()
 })
 
 tap.test('should include by guessing extension', function (t) {
   var file = loadFile('guess.md')
+  var expected = transform(file.contents.split('\n'))
   t.equal(
     processor.processSync(file).toString(),
-    transform(file.contents.split('\n'))
+    expected
   )
   t.end()
 })
 
 tap.test('should include from sub and super paths', function (t) {
   var file = loadFile('super.md')
+  var expected = transform(file.contents.split('\n'))
   t.equal(
     processor.processSync(file).toString(),
-    transform(file.contents.split('\n'))
+    expected
   )
   t.end()
 })
