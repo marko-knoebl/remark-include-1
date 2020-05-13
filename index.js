@@ -7,7 +7,7 @@ var parseInclude = /^@include (.*)(\n|$)/
 
 module.exports = function (options) {
   var proc = this;
-  options = options || {}
+  options = options || { escaped: false, glob: false }
   var cwd = options.cwd || process.cwd()
 
   var prt = proc.Parser.prototype
@@ -24,11 +24,12 @@ module.exports = function (options) {
         var includedChildren = [];
 
         var includePattern = path.join(child.source.dirname || cwd, child.value)
-        var includePathsUnique = matchMdPaths(includePattern, glob=options.glob)
+        var includePathsUnique = matchMdPaths(includePattern, options)
         for (var includePath of includePathsUnique) {
           var fileContents = fs.readFileSync(includePath, {encoding: "utf-8"})
           var vfile = new VFile({path: includePath, contents: fileContents})
-          var includedChildrenFromCurrentFile = proc.runSync(proc.parse(vfile)).children;
+          var parsed = proc.parse(vfile)
+          var includedChildrenFromCurrentFile = proc.runSync(parsed, vfile).children;
           includedChildren = includedChildren.concat(includedChildrenFromCurrentFile)
         }
         ast.children.splice(i, 1, ...includedChildren)
@@ -69,10 +70,20 @@ function tokenizer (eat, value, silent) {
 
 /**
  * returns an array of paths that match the given pattern
+ * 
  * if glob is true, find matches based on a glob pattern
  * otherwise, look for "pattern", "pattern.md" or "pattern.markdown"
+ * 
+ * if escaped is true, interprets paths as markdown-escaped
+ * e.g. "foo-\*.md" is interpreted as "foo-*.md"
+ * this can accomodate formatters like prettier
+ * note: double backslashes are (currently) not supported as escapes
+ * e.g. "foo\\bar.md" will remain "foo\\bar.md"
  */
-function matchMdPaths(pattern, glob=false) {
+function matchMdPaths(pattern, {escaped, glob}) {
+  if (escaped) {
+    pattern = unescapeMarkdown(pattern)
+  }
   var patterns = [pattern, pattern + ".md", pattern + ".markdown"]
   if (glob) {
     var includePaths = [];
@@ -95,4 +106,51 @@ function matchMdPaths(pattern, glob=false) {
     }
     throw new Error('Unable to include ' + pattern)
   }
+}
+
+function unescapeMarkdown(input) {
+  // from https://github.com/wooorm/markdown-escapes/blob/master/index.js
+  // (except for '\\')
+  var escapableCharacters = [
+    '`',
+    '*',
+    '{',
+    '}',
+    '[',
+    ']',
+    '(',
+    ')',
+    '#',
+    '+',
+    '-',
+    '.',
+    '!',
+    '_',
+    '>',
+    '~',
+    '|',
+    '\n',
+    '"',
+    '$',
+    '%',
+    '&',
+    "'",
+    ',',
+    '/',
+    ':',
+    ';',
+    '<',
+    '=',
+    '?',
+    '@',
+    '^'
+  ]
+  // turn each character into a four-character sequence
+  // by prepending backslashes
+  // then convert to a RegExp which will make them two-character sequences
+  // e.g.: * -> \\\* -> \*
+  var escapedCharacters = escapableCharacters.map((char) => "\\\\\\" + char)
+  var regexString = "(" + escapedCharacters.join("|") + ")"
+  var regex = new RegExp(regexString, "g")
+  return input.replace(regex, m => m.slice(1, 2))
 }

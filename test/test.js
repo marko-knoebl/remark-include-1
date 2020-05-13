@@ -1,4 +1,6 @@
-var remark = require('remark')
+var unified = require('unified')
+var remarkParse = require('remark-parse')
+var remarkStringify = require('remark-stringify')
 var VFile = require('vfile')
 var path = require('path')
 var tap = require('tap')
@@ -6,15 +8,34 @@ var fs = require('fs')
 
 var include = require('../index')
 
-var processor = remark().use(include)
-var processorGlob = remark().use(include, {glob: true})
+var processor = unified()
+  .use(remarkParse)
+  .use(include)
+  .use(remarkStringify)
+var processorGlob = unified()
+  .use(remarkParse)
+  .use(include, {glob: true})
+  .use(remarkStringify)
+var processorEscaped = unified()
+  .use(remarkParse)
+  .use(include, {escaped: true})
+  .use(remarkStringify)
+var processorGlobEscaped = unified()
+  .use(remarkParse)
+  .use(include, {escaped: true, glob: true})
+  .use(remarkStringify)
 
 var map = {
   '@include a.md': '# A',
   '@include a': '# A',
   '@include b': '# B',
   '@include sub/sub': '# A\n\n# sub',
-  '@include c*.md': '# C1\n\n# C2'
+  // for glob includes
+  '@include c*.md': '# C1\n\n# C2',
+  // for escaped includes
+  '@include a\\.md': '# A',
+  // glob and escaped
+  '@include c\\*.md': '# C1\n\n# C2'
 }
 
 function transform (lines) {
@@ -71,10 +92,30 @@ tap.test('should fail to include non-existent file', function (t) {
 })
 
 tap.test('should include by glob pattern', function(t) {
-  var file = loadFile('pattern.md')
+  var file = loadFile('glob.md')
   var expected = transform(file.contents.split('\n'))
   t.equal(
     processorGlob.processSync(file).toString(),
+    expected
+  )
+  t.end()
+})
+
+tap.test('should include by escaped path', function (t) {
+  var file = loadFile('escaped.md')
+  var expected = transform(file.contents.split('\n'))
+  t.equal(
+    processorEscaped.processSync(file).toString(),
+    expected
+  )
+  t.end()
+})
+
+tap.test('should include by escaped glob pattern', function (t) {
+  var file = loadFile('glob-escaped.md')
+  var expected = transform(file.contents.split('\n'))
+  t.equal(
+    processorGlobEscaped.processSync(file).toString(),
     expected
   )
   t.end()

@@ -1,6 +1,6 @@
 {
-  "name": "remark-include",
-  "version": "2.0.0",
+  "name": "@karuga/remark-include-experiment",
+  "version": "2.2.0",
   "description": "Transform @include statements to contents",
   "main": "index.js",
   "author": "Stephen Belanger <admin@stephenbelanger.com>",
@@ -25,11 +25,13 @@
     "test": "tap test/test.js"
   },
   "devDependencies": {
-    "remark": "^7.0.0",
-    "tap": "^10.0.0"
+    "remark-parse": "^8.0.2",
+    "remark-stringify": "^8.0.0",
+    "tap": "^14.10.7",
+    "unified": "^9.0.0"
   },
   "dependencies": {
     "fast-glob": "^3.2.2",
-    "vfile": "^2.0.0"
+    "vfile": "^4.1.0"
   }
 }
