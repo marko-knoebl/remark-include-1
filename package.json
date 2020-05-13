@@ -1,17 +1,16 @@
 {
-  "name": "@karuga/remark-include-experiment",
-  "version": "2.2.0",
+  "name": "@karuga/remark-include",
+  "version": "0.5.0",
   "description": "Transform @include statements to contents",
   "main": "index.js",
-  "author": "Stephen Belanger <admin@stephenbelanger.com>",
   "license": "MIT",
-  "homepage": "https://github.com/Qard/remark-include#readme",
+  "homepage": "https://github.com/marko-knoebl/remark-include-1#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Qard/remark-include.git"
+    "url": "git+https://github.com/marko-knoebl/remark-include-1.git"
   },
   "bugs": {
-    "url": "https://github.com/Qard/remark-include/issues"
+    "url": "https://github.com/marko-knoebl/remark-include-1/issues"
   },
   "directories": {
     "test": "test"
