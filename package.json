@@ -1,6 +1,6 @@
 {
   "name": "@karuga/remark-include",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Transform @include statements to contents",
   "main": "index.js",
   "license": "MIT",

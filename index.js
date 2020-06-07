@@ -23,7 +23,10 @@ module.exports = function (options) {
       if (child.type === 'include') {
         var includedChildren = [];
 
-        var includePattern = path.join(child.source.dirname || cwd, child.value)
+        // join manually with slashes
+        // - as glob libraries don't play well backslashes as path separators
+        var includeDir = (child.source.dirname || cwd).replace(/\\/g, "/")
+        var includePattern = includeDir + "/" + child.value
         var includePathsUnique = matchMdPaths(includePattern, options)
         for (var includePath of includePathsUnique) {
           var fileContents = fs.readFileSync(includePath, {encoding: "utf-8"})
